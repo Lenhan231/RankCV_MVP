@@ -102,13 +102,45 @@ The API will be available at `http://localhost:8000`
 
 ### Example Request
 
+#### Using cURL (Linux/macOS/Windows)
+
 ```bash
 curl -X POST "http://localhost:8000/evaluate" \
   -H "Content-Type: application/json" \
   -d @test_request.json
 ```
 
-Or using Python:
+#### Using PowerShell
+
+```powershell
+# Method 1: Using Invoke-RestMethod (Returns JSON as PowerShell object)
+$json = Get-Content .\test_request.json -Raw
+Invoke-RestMethod `
+    -Uri "http://localhost:8000/evaluate" `
+    -Method Post `
+    -ContentType "application/json" `
+    -Body $json
+```
+
+```powershell
+# Method 2: Get raw JSON output
+$json = Get-Content .\test_request.json -Raw
+$response = Invoke-RestMethod `
+    -Uri "http://localhost:8000/evaluate" `
+    -Method Post `
+    -ContentType "application/json" `
+    -Body $json
+$response | ConvertTo-Json
+```
+
+```powershell
+# Method 3: Using curl.exe for raw JSON
+curl.exe -X POST "http://localhost:8000/evaluate" `
+  -H "Content-Type: application/json" `
+  -d (Get-Content .\test_request.json -Raw)
+```
+
+#### Using Python
 
 ```python
 import requests
@@ -139,18 +171,39 @@ print(response.json())
 
 ## Usage Examples
 
-### 1. Basic Usage with cURL
+### 1. Using PowerShell (Windows) - Recommended
+
+**Basic Usage:**
+```powershell
+$json = Get-Content .\test_request.json -Raw
+Invoke-RestMethod `
+    -Uri "http://localhost:8000/evaluate" `
+    -Method Post `
+    -ContentType "application/json" `
+    -Body $json
+```
+
+**View Raw JSON Output:**
+```powershell
+$json = Get-Content .\test_request.json -Raw
+$response = Invoke-RestMethod `
+    -Uri "http://localhost:8000/evaluate" `
+    -Method Post `
+    -ContentType "application/json" `
+    -Body $json
+
+$response | ConvertTo-Json | Out-String
+```
+
+### 2. Using cURL
 
 ```bash
 curl -X POST "http://localhost:8000/evaluate" \
   -H "Content-Type: application/json" \
-  -d '{
-    "cv_text": "Your CV content...",
-    "job_text": "Job description content..."
-  }'
+  -d @test_request.json
 ```
 
-### 2. Using Python Requests
+### 3. Using Python Requests
 
 ```python
 import requests
@@ -166,17 +219,20 @@ response = requests.post(
 
 result = response.json()
 print(f"Overall Score: {result['overall_score']}/100")
+print(f"Skill Match: {result['skill_match']}/100")
 print(f"Missing Skills: {', '.join(result['missing_skills'])}")
 print(f"Recommendation: {result['recommendation']}")
 ```
 
-### 3. Interactive API Documentation
+### 4. Interactive API Documentation
 
 Once the server is running, visit:
 - **Swagger UI**: http://localhost:8000/docs
 - **ReDoc**: http://localhost:8000/redoc
 
 These provide interactive documentation where you can test the API directly.
+
+**Note**: The API returns valid JSON. If using PowerShell's `Invoke-RestMethod`, it automatically converts JSON to PowerShell objects for easier manipulation. Use `ConvertTo-Json` to view the raw JSON format.
 
 ## Architecture
 
