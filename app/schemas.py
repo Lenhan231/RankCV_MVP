@@ -17,3 +17,18 @@ class MatchResponse(BaseModel):
     missing_skills: List[str]
     strengths: List[str]
     recommendation: str
+
+
+class InterviewQuestionsRequest(BaseModel):
+    cv_text: str = Field(..., min_length=50)
+    job_text: str = Field(..., min_length=50)
+
+
+class InterviewQuestion(BaseModel):
+    skill_tag: str
+    question: str
+    suggested_answer: str
+
+
+class InterviewQuestionsResponse(BaseModel):
+    questions: List[InterviewQuestion]
