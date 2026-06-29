@@ -4,9 +4,10 @@ import os
 from google import genai
 from google.genai import types
 
+from app.rag.retriever import retrieve_fpt_context
 from app.schemas import (
     MatchRequest,
-    MatchData,
+    MatchResponse,
     InterviewQuestionsRequest,
     InterviewQuestionsResponse,
 )
@@ -17,15 +18,76 @@ client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
 
 def build_prompt(req: MatchRequest) -> str:
-    return f"""You are a resume-job matching engine. Analyze the CV, job description, and other context below to return ONLY valid JSON.
+    query = f"""
+CV:
+{req.cv_text}
 
-Return a detailed match analysis including:
-- overall_score, skill_match, experience_match, education_match: integer scores 0-100
-- current_cv_summary: A brief summary of the CV
-- skills, experience, projects: Extracted lists
-- skill_gap_analysis: Detailed gap analysis (overall verdict, strengths, weaknesses, missing skills, role match level, growth suggestions, mentor note)
-- career_alignment: Career goal feasibility and next steps
-- cultural_fit: Cultural alignment score (0-100), core values match, culture gaps, and work style compatibility. IMPORTANT: Evaluate this based on your knowledge of the specific company culture if COMPANY NAME is provided, otherwise infer from the job description.
+Job Description:
+{req.job_text}
+
+Target Role:
+{req.target_role}
+
+Career Goal:
+{req.career_goal}
+"""
+
+    fpt_context = retrieve_fpt_context(query, top_k=5)
+
+    return f"""
+You are an AI CV mentor specialized in FPT recruitment.
+
+Use ONLY the FPT context below.
+Do not invent extra FPT information.
+
+FPT CONTEXT:
+{fpt_context}
+
+Analyze the candidate CV and job description.
+Explain how the candidate fits FPT culture and how they should improve their CV for FPT.
+
+Return ONLY valid JSON.
+No markdown.
+No code blocks.
+No extra text.
+
+Return JSON matching this schema:
+{{
+  "current_cv_summary": "",
+  "fpt_culture_intro": "",
+  "fpt_strengths": [],
+  "candidate_fpt_fit": {{
+    "fit_level": "",
+    "matched_culture_points": [],
+    "missing_culture_points": [],
+    "fit_explanation": ""
+  }},
+  "cv_improvement_advice": {{
+    "strengths_to_highlight": [],
+    "weaknesses_to_fix": [],
+    "keywords_to_add": [],
+    "rewrite_suggestions": []
+  }},
+  "career_advice": {{
+    "readiness_level": "",
+    "recommended_next_steps": [],
+    "estimated_timeline": ""
+  }},
+  "mentor_note": ""
+}}
+
+Rules:
+- Use Vietnamese for all user-facing text.
+- fit_level must be one of: "Cao", "Trung bình", "Thấp".
+- fpt_culture_intro must be based only on FPT CONTEXT.
+- fpt_strengths must be based only on FPT CONTEXT.
+- matched_culture_points must connect evidence from the CV with FPT CONTEXT.
+- missing_culture_points can be [] if the CV fits well.
+- strengths_to_highlight must have at least 1 item.
+- weaknesses_to_fix can be [] if the CV is already strong.
+- keywords_to_add should come from the JD and FPT CONTEXT only.
+- rewrite_suggestions should be practical and specific for CV improvement.
+- Do not mention any FPT fact that is not included in FPT CONTEXT.
 
 CV:
 {req.cv_text}
@@ -33,24 +95,27 @@ CV:
 JOB DESCRIPTION:
 {req.job_text}
 
-COMPANY NAME: {req.company_name or "Not specified"}
-TARGET ROLE: {req.target_role or "Not specified"}
-CAREER GOAL: {req.career_goal or "Not specified"}
+TARGET ROLE:
+{req.target_role}
 
-RESPONSE (JSON ONLY):"""
+CAREER GOAL:
+{req.career_goal}
+
+RESPONSE JSON ONLY:
+"""
 
 
-def evaluate_match(req: MatchRequest) -> MatchData:
-    """Call Gemini and return a validated MatchData."""
+def evaluate_match(req: MatchRequest) -> MatchResponse:
     response = client.models.generate_content(
         model=MODEL,
         contents=build_prompt(req),
         config=types.GenerateContentConfig(
             response_mime_type="application/json",
-            response_schema=MatchData,
+            response_schema=MatchResponse,
         ),
     )
-    return MatchData.model_validate_json(response.text)
+
+    return MatchResponse.model_validate_json(response.text)
 
 
 
