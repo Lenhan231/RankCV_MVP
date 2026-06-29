@@ -13,43 +13,34 @@ class MatchRequest(BaseModel):
     career_goal: str | None = None
 
 
-class SkillGapAnalysis(BaseModel):
-    overall_verdict: str
-    strengths: List[str]
-    weaknesses: List[str]
-    missing_skills: List[str]
-    role_match_level: str
-    growth_suggestions: List[str]
-    mentor_note: str
+class CandidateFptFit(BaseModel):
+    fit_level: str
+    matched_culture_points: List[str]
+    missing_culture_points: List[str]
+    fit_explanation: str
 
 
-class CareerAlignment(BaseModel):
-    goal_feasibility: str
+class CvImprovementAdvice(BaseModel):
+    strengths_to_highlight: List[str]
+    weaknesses_to_fix: List[str]
+    keywords_to_add: List[str]
+    rewrite_suggestions: List[str]
+
+
+class CareerAdvice(BaseModel):
     readiness_level: str
-    key_gaps_for_goal: List[str]
     recommended_next_steps: List[str]
     estimated_timeline: str
 
 
-class CulturalFit(BaseModel):
-    culture_alignment_score: int
-    core_values_match: List[str]
-    culture_gaps: List[str]
-    work_style_compatibility: str
-
-
 class MatchData(BaseModel):
-    overall_score: int
-    skill_match: int
-    experience_match: int
-    education_match: int
     current_cv_summary: str
-    skills: List[str]
-    experience: List[str]
-    projects: List[str]
-    skill_gap_analysis: SkillGapAnalysis
-    career_alignment: CareerAlignment
-    cultural_fit: CulturalFit
+    fpt_culture_intro: str
+    fpt_strengths: List[str]
+    candidate_fpt_fit: CandidateFptFit
+    cv_improvement_advice: CvImprovementAdvice
+    career_advice: CareerAdvice
+    mentor_note: str
 
 
 class MatchResponse(BaseModel):
