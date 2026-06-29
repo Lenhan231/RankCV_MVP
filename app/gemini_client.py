@@ -8,6 +8,7 @@ from app.rag.retriever import retrieve_fpt_context
 from app.schemas import (
     MatchRequest,
     MatchResponse,
+    MatchData,
     InterviewQuestionsRequest,
     InterviewQuestionsResponse,
 )
@@ -105,17 +106,17 @@ RESPONSE JSON ONLY:
 """
 
 
-def evaluate_match(req: MatchRequest) -> MatchResponse:
+def evaluate_match(req: MatchRequest) -> MatchData:
     response = client.models.generate_content(
         model=MODEL,
         contents=build_prompt(req),
         config=types.GenerateContentConfig(
             response_mime_type="application/json",
-            response_schema=MatchResponse,
+            response_schema=MatchData,
         ),
     )
 
-    return MatchResponse.model_validate_json(response.text)
+    return MatchData.model_validate_json(response.text)
 
 
 
