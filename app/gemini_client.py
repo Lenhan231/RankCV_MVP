@@ -6,7 +6,7 @@ from google.genai import types
 
 from app.schemas import (
     MatchRequest,
-    MatchResponse,
+    MatchData,
     InterviewQuestionsRequest,
     InterviewQuestionsResponse,
 )
@@ -17,16 +17,15 @@ client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
 
 def build_prompt(req: MatchRequest) -> str:
-    return f"""You are a resume-job matching engine. Analyze the CV and job description below and return ONLY valid JSON (no markdown, no code blocks, no extra text).
+    return f"""You are a resume-job matching engine. Analyze the CV, job description, and other context below to return ONLY valid JSON.
 
-Return JSON with these fields:
-- overall_score: integer 0-100
-- skill_match: integer 0-100
-- experience_match: integer 0-100
-- education_match: integer 0-100
-- missing_skills: list of skill names as strings
-- strengths: list of strength descriptions as strings
-- recommendation: one sentence recommendation as string
+Return a detailed match analysis including:
+- overall_score, skill_match, experience_match, education_match: integer scores 0-100
+- current_cv_summary: A brief summary of the CV
+- skills, experience, projects: Extracted lists
+- skill_gap_analysis: Detailed gap analysis (overall verdict, strengths, weaknesses, missing skills, role match level, growth suggestions, mentor note)
+- career_alignment: Career goal feasibility and next steps
+- cultural_fit: Cultural alignment score (0-100), core values match, culture gaps, and work style compatibility. IMPORTANT: Evaluate this based on your knowledge of the specific company culture if COMPANY NAME is provided, otherwise infer from the job description.
 
 CV:
 {req.cv_text}
@@ -34,20 +33,25 @@ CV:
 JOB DESCRIPTION:
 {req.job_text}
 
+COMPANY NAME: {req.company_name or "Not specified"}
+TARGET ROLE: {req.target_role or "Not specified"}
+CAREER GOAL: {req.career_goal or "Not specified"}
+
 RESPONSE (JSON ONLY):"""
 
 
-def evaluate_match(req: MatchRequest) -> MatchResponse:
-    """Call Gemini and return a validated MatchResponse."""
+def evaluate_match(req: MatchRequest) -> MatchData:
+    """Call Gemini and return a validated MatchData."""
     response = client.models.generate_content(
         model=MODEL,
         contents=build_prompt(req),
         config=types.GenerateContentConfig(
             response_mime_type="application/json",
-            response_schema=MatchResponse,
+            response_schema=MatchData,
         ),
     )
-    return MatchResponse.model_validate_json(response.text)
+    return MatchData.model_validate_json(response.text)
+
 
 
 def build_interview_prompt(req: InterviewQuestionsRequest) -> str:
